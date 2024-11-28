@@ -1,9 +1,12 @@
 package com.softserve.itacademy.service;
 
+import com.softserve.itacademy.exception.CustomErrorsUtils;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.repository.ToDoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,39 +15,35 @@ import java.util.List;
 @Service
 public class ToDoService {
     private final ToDoRepository todoRepository;
+    private final CustomErrorsUtils customErrorsUtils;
+    
+    @Autowired
+    public ToDoService(ToDoRepository todoRepository, CustomErrorsUtils customErrorsUtils) {
+		this.todoRepository = todoRepository;
+		this.customErrorsUtils = customErrorsUtils;
+	}
 
-    public ToDoService(ToDoRepository todoRepository) {
-        this.todoRepository = todoRepository;
-    }
-
-    public ToDo create(ToDo todo) {
+	public ToDo create(ToDo todo) {
         log.info("Creating a new ToDo: {}", todo);
-        if (todo == null) {
-            log.error("ToDo creation failed: ToDo is null");
-            throw new RuntimeException("ToDo cannot be null");
-        }
+        customErrorsUtils.validateArgumentLogAndThrow(todo, "ToDo cannot be null", "ToDo creation failed: ToDo is null");
         ToDo savedToDo = todoRepository.save(todo);
         log.info("ToDo created successfully with ID: {}", savedToDo.getId());
         return savedToDo;
     }
 
-    public ToDo readById(long id) {
+    public ToDo readById(long id) throws  EntityNotFoundException{
         log.info("Reading ToDo with ID: {}", id);
-        return todoRepository.findById(id).orElseThrow(() -> {
-            log.error("ToDo with ID {} not found", id);
-            return new EntityNotFoundException("ToDo with id " + id + " not found");
-        });
+        var todoOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(todoRepository.findById(id), "ToDo", id);
+        return todoOpt.get();
     }
 
     public ToDo update(ToDo todo) {
-        if (todo == null) {
-            log.error("ToDo update failed: ToDo is null");
-            throw new RuntimeException("ToDo cannot be null");
-        }
+    	
+    	customErrorsUtils.validateArgumentLogAndThrow(todo, "ToDo cannot be null", "ToDo update failed: ToDo is null");
 
         log.info("Updating ToDo with ID: {}", todo.getId());
 
-        readById(todo.getId()); // Check if ToDo exists
+        readById(todo.getId()); 
         ToDo updatedToDo = todoRepository.save(todo);
         log.info("ToDo with ID {} updated successfully", updatedToDo.getId());
         return updatedToDo;
