@@ -34,10 +34,8 @@ public class StateService {
 
     public State readById(long id) throws EntityNotFoundException  {
         log.debug("Fetching state with id: {}", id);
-        Optional<State> stateOpt = stateRepository.findById(id);
-		customErrorsUtils.validateArgumentLogAndThrow(stateOpt, 
-				"State with id %s not found".formatted(id),
-				"State with id {} doesn't exist %s".formatted(id));
+		Optional<State> stateOpt = customErrorsUtils
+				.returnValidatedFindByIdCallOrElseThrow(stateRepository.findById(id), "State", id);
 
 		State state = stateOpt.get();
         log.debug("Get state {}", state);
