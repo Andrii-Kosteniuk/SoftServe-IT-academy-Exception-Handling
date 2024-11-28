@@ -1,15 +1,19 @@
 package com.softserve.itacademy.service;
 
-import com.softserve.itacademy.model.State;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import com.softserve.itacademy.dto.StateDto;
+import com.softserve.itacademy.exception.CustomErrorsUtils;
+import com.softserve.itacademy.exception.EntityNotFoundException;
+import com.softserve.itacademy.exception.NullEntityReferenceException;
+import com.softserve.itacademy.model.State;
 import com.softserve.itacademy.repository.StateRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -17,34 +21,35 @@ import java.util.Optional;
 public class StateService {
 
     private final StateRepository stateRepository;
+    private final CustomErrorsUtils customErrorsUtils;
 
-    public State create(State state) {
+    public State create(State state) throws NullEntityReferenceException {
         log.debug("Creating state {}", state);
-        if (state == null){
-            throw new RuntimeException("State cannot be null");
-        }
+        customErrorsUtils.validateArgumentLogAndThrow(state, "State cannot be null", "");
 
         state = stateRepository.save(state);
         log.debug("State {} was created", state);
         return state;
     }
 
-    public State readById(long id) {
+    public State readById(long id) throws EntityNotFoundException  {
         log.debug("Fetching state with id: {}", id);
-        State state = stateRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("State with id {} doesn't exists", id);
-                    return new RuntimeException("State with id " + id + " not found");
-                });
+        Optional<State> stateOpt = stateRepository.findById(id);
+		customErrorsUtils.validateArgumentLogAndThrow(stateOpt, 
+				"State with id %s not found".formatted(id),
+				"State with id {} doesn't exist %s".formatted(id));
+
+		State state = stateOpt.get();
         log.debug("Get state {}", state);
+        
         return state;
     }
 
-    public State update(State state) {
+    public State update(State state) throws NullEntityReferenceException {
         log.debug("Updating state {}", state);
-        if (state == null){
-            throw new RuntimeException("State cannot be null");
-        }
+        
+        customErrorsUtils.validateArgumentLogAndThrow(state, "State cannot be null", "");
+        
         readById(state.getId());
         state = stateRepository.save(state);
         log.debug("State {} was updated", state);
@@ -66,24 +71,30 @@ public class StateService {
         return states;
     }
 
-    public State getByName(String name) {
-        log.debug("Fetching state with name {}", name);
-        State state = stateRepository.findByName(name);
+	public State getByName(String name) {
+		log.debug("Fetching state with name {}", name);
+		State state = stateRepository.findByName(name);
 
-        if (state != null) {
-            log.debug("State found: {}", state);
-            return state;
-        }
-        log.warn("No state found with name: {}", name);
-        throw new RuntimeException("State with name '" + name + "' not found");
-    }
+		customErrorsUtils.validateArgumentLogAndThrow(state, 
+				"State with name '%s' not found".formatted(name),
+				"No state found with name: {} %s".formatted(name));
+
+		log.debug("State found: {}", state);
+		return state;
+	}
 
     public List<StateDto> findAll() {
         log.debug("Fetching all states as StateDto}");
-        List<StateDto> dtos = stateRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .toList();
+        List<StateDto> dtos;
+        try {
+        	dtos = stateRepository.findAll()
+                    .stream()
+                    .map(this::toDto)
+                    .toList();
+		} catch (IllegalArgumentException e) {
+			log.debug("findAll method resulted with IllegalArgumentException");
+			throw new EntityNotFoundException("Some of State objects was/were of 'null' value");
+		}
         log.debug("Get all states as StateDto");
         return dtos;
     }
