@@ -3,6 +3,7 @@ package com.softserve.itacademy.service;
 import com.softserve.itacademy.dto.userDto.UpdateUserDto;
 import com.softserve.itacademy.dto.userDto.UserDto;
 import com.softserve.itacademy.dto.userDto.UserDtoConverter;
+import com.softserve.itacademy.exception.CustomErrorsUtils;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.model.UserRole;
 import com.softserve.itacademy.repository.UserRepository;
@@ -21,33 +22,26 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserDtoConverter userDtoConverter;
+    private final CustomErrorsUtils customErrorsUtils;
 
     public User create(User user) {
         log.info("Creating a new user: {}", user);
-        if (user == null) {
-            log.error("User creation failed: User is null");
-            throw new RuntimeException("User cannot be null");
-        }
+        customErrorsUtils.validateArgumentLogAndThrow(user, "User cannot be null", "User creation failed: User is null");
         User savedUser = userRepository.save(user);
         log.info("User created successfully with ID: {}", savedUser.getId());
         return savedUser;
     }
 
-    public User readById(long id) {
+    public User readById(long id) throws EntityNotFoundException {
         log.info("Reading user with ID: {}", id);
-        return userRepository.findById(id).orElseThrow(() -> {
-            log.error("User with ID {} not found", id);
-            return new EntityNotFoundException("User with id " + id + " not found");
-        });
+        var userOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(userRepository.findById(id), "User", id);
+        return userOpt.get();
     }
 
     public UserDto update(UpdateUserDto updateUserDto) {
         log.info("Updating user with ID: {}", updateUserDto.getId());
-        User user = userRepository.findById(updateUserDto.getId()).orElseThrow(() -> {
-            log.error("User with ID {} not found", updateUserDto.getId());
-            return new EntityNotFoundException("User with id " + updateUserDto.getId() + " not found");
-        });
-
+        var userOpt =  customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(userRepository.findById(updateUserDto.getId()), "User", updateUserDto.getId());
+        User user = userOpt.get();
         if (user.getRole() == UserRole.ADMIN) {
             log.debug("Updating role for user with ID: {}", user.getId());
             user.setRole(updateUserDto.getRole());
