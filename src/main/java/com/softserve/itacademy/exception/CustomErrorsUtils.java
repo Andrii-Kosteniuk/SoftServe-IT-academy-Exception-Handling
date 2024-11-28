@@ -21,4 +21,14 @@ public class CustomErrorsUtils {
 			throw new EntityNotFoundException(exceptionMessage);
 		}
 	}
+	
+	public <T> Optional<T> returnValidatedFindByIdCallOrElseThrow(Optional<T> optional, String entityName, long id)
+			throws EntityNotFoundException {
+		
+		this.validateArgumentLogAndThrow(optional,
+				"%s with id %s not found".formatted(entityName, id),
+				"%s with id {} not found %s".formatted(entityName, id));
+		return optional;
+	}
+	
 }
