@@ -1,11 +1,13 @@
 package com.softserve.itacademy.controller.advice;
 
-import com.softserve.itacademy.exception.EntityNotFoundException;
-import com.softserve.itacademy.exception.NullEntityReferenceException;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.ModelAndView;
+
+import com.softserve.itacademy.exception.EntityNotFoundException;
+import com.softserve.itacademy.exception.NullEntityReferenceException;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
