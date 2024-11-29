@@ -10,11 +10,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import com.softserve.itacademy.exception.EntityNotFoundException;
-import com.softserve.itacademy.exception.NullEntityReferenceException;
-
-import jakarta.servlet.http.HttpServletResponse;
-
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
