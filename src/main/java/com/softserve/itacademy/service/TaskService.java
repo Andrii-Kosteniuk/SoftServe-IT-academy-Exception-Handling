@@ -1,7 +1,10 @@
 package com.softserve.itacademy.service;
 
+import com.softserve.itacademy.ValidationHandler;
 import com.softserve.itacademy.dto.TaskTransformer;
 import com.softserve.itacademy.dto.TaskDto;
+import com.softserve.itacademy.exception.EntityNotFoundException;
+import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.Task;
 import com.softserve.itacademy.repository.StateRepository;
 import com.softserve.itacademy.repository.ToDoRepository;
@@ -11,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -21,19 +25,17 @@ public class TaskService {
     private final ToDoRepository toDoRepository;
     private final StateRepository stateRepository;
     private final TaskTransformer taskTransformer;
+    private final ValidationHandler handler;
 
     public TaskDto create(TaskDto taskDto) {
         log.info("Creating task with details: {}", taskDto);
-        if (taskDto == null) {
-            log.error("Failed to create task: taskDto is null");
-            throw new RuntimeException("Task cannot be null");
-        }
+        handler.onNullValidation(taskDto, TaskDto.class);
         Task task = taskTransformer.fillEntityFields(
                 new Task(),
                 taskDto,
                 toDoRepository.findById(taskDto.getTodoId()).orElseThrow(() -> {
                     log.error("ToDo with id {} not found", taskDto.getTodoId());
-                    return new RuntimeException("ToDo not found");
+                    return new EntityNotFoundException("ToDo not found");
                 }),
                 stateRepository.findByName("New")
         );
@@ -47,20 +49,17 @@ public class TaskService {
         log.info("Reading task with id {}", id);
         return taskRepository.findById(id).orElseThrow(() -> {
             log.error("Task with id {} not found", id);
-            return new RuntimeException("Task with id " + id + " not found");
+            return new EntityNotFoundException("Task with id " + id + " not found");
         });
     }
 
     public TaskDto update(TaskDto taskDto) {
         log.info("Updating task with id {}", taskDto.getId());
-        if (taskDto == null) {
-            log.error("Failed to update task: taskDto is null");
-            throw new RuntimeException("Task cannot be 'null'");
-        }
+        handler.onNullValidation(taskDto, TaskDto.class);
 
         Task existingTask = taskRepository.findById(taskDto.getId()).orElseThrow(() -> {
             log.error("Task with id {} not found", taskDto.getId());
-            return new RuntimeException("Task with id " + taskDto.getId() + " not found");
+            return new EntityNotFoundException("Task with id " + taskDto.getId() + " not found");
         });
 
         Task updatedTask = taskTransformer.fillEntityFields(
@@ -68,11 +67,11 @@ public class TaskService {
                 taskDto,
                 toDoRepository.findById(taskDto.getTodoId()).orElseThrow(() -> {
                     log.error("ToDo with id {} not found", taskDto.getTodoId());
-                    return new RuntimeException("ToDo not found");
+                    return new EntityNotFoundException("ToDo not found");
                 }),
                 stateRepository.findById(taskDto.getStateId()).orElseThrow(() -> {
                     log.error("State with id {} not found", taskDto.getStateId());
-                    return new RuntimeException("State not found");
+                    return new EntityNotFoundException("State not found");
                 })
         );
 
