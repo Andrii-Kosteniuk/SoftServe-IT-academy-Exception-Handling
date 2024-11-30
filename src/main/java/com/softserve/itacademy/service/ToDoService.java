@@ -1,28 +1,28 @@
 package com.softserve.itacademy.service;
 
+import com.softserve.itacademy.ValidationHandler;
+import com.softserve.itacademy.exception.EntityNotFoundException;
+import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.repository.ToDoRepository;
-import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ToDoService {
     private final ToDoRepository todoRepository;
-
-    public ToDoService(ToDoRepository todoRepository) {
-        this.todoRepository = todoRepository;
-    }
+    private final ValidationHandler handler;
 
     public ToDo create(ToDo todo) {
         log.info("Creating a new ToDo: {}", todo);
-        if (todo == null) {
-            log.error("ToDo creation failed: ToDo is null");
-            throw new RuntimeException("ToDo cannot be null");
-        }
+        handler.onNullValidation(todo, ToDo.class);
         ToDo savedToDo = todoRepository.save(todo);
         log.info("ToDo created successfully with ID: {}", savedToDo.getId());
         return savedToDo;
@@ -37,14 +37,13 @@ public class ToDoService {
     }
 
     public ToDo update(ToDo todo) {
-        if (todo == null) {
-            log.error("ToDo update failed: ToDo is null");
-            throw new RuntimeException("ToDo cannot be null");
-        }
-
         log.info("Updating ToDo with ID: {}", todo.getId());
+        handler.onNullValidation(todo, ToDo.class);
 
-        readById(todo.getId()); // Check if ToDo exists
+        Optional.ofNullable(readById(todo.getId())).orElseThrow(
+                () -> new EntityNotFoundException("ToDo with id " + todo.getId() + " not found")
+        );
+
         ToDo updatedToDo = todoRepository.save(todo);
         log.info("ToDo with ID {} updated successfully", updatedToDo.getId());
         return updatedToDo;
@@ -54,6 +53,7 @@ public class ToDoService {
         log.info("Deleting ToDo with ID: {}", id);
         ToDo todo = readById(id);
         todoRepository.delete(todo);
+
         log.info("ToDo with ID {} deleted successfully", id);
     }
 
