@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/template}"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div layout:fragment="content" class="container mt-5">
+    <div class="container mt-5 text-center">
+        <h1 class="text-danger">Error</h1>
+        <p th:text="${message}" style="color: #dc3545"></p>
+        <a th:href="@{/}" class="btn btn-primary mt-3">Go to Home page</a>
+    </div>
+</div>
+</body>
+</html>
