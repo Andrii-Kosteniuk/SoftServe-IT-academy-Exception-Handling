@@ -1,14 +1,13 @@
 package com.softserve.itacademy.service;
 
-import com.softserve.itacademy.ValidationHandler;
 import com.softserve.itacademy.dto.TaskTransformer;
 import com.softserve.itacademy.dto.TaskDto;
-import com.softserve.itacademy.exception.EntityNotFoundException;
 import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.Task;
 import com.softserve.itacademy.repository.StateRepository;
 import com.softserve.itacademy.repository.ToDoRepository;
 import com.softserve.itacademy.repository.TaskRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,11 +24,11 @@ public class TaskService {
     private final ToDoRepository toDoRepository;
     private final StateRepository stateRepository;
     private final TaskTransformer taskTransformer;
-    private final ValidationHandler handler;
 
     public TaskDto create(TaskDto taskDto) {
         log.info("Creating task with details: {}", taskDto);
-        handler.onNullValidation(taskDto, TaskDto.class);
+
+        checkOnNullEntity(taskDto);
         Task task = taskTransformer.fillEntityFields(
                 new Task(),
                 taskDto,
@@ -45,6 +44,10 @@ public class TaskService {
         return taskTransformer.convertToDto(savedTask);
     }
 
+    private static void checkOnNullEntity(TaskDto taskDto) {
+        if (Objects.isNull(taskDto)) throw new NullEntityReferenceException("Task can not be null");
+    }
+
     public Task readById(long id) {
         log.info("Reading task with id {}", id);
         return taskRepository.findById(id).orElseThrow(() -> {
@@ -55,7 +58,6 @@ public class TaskService {
 
     public TaskDto update(TaskDto taskDto) {
         log.info("Updating task with id {}", taskDto.getId());
-        handler.onNullValidation(taskDto, TaskDto.class);
 
         Task existingTask = taskRepository.findById(taskDto.getId()).orElseThrow(() -> {
             log.error("Task with id {} not found", taskDto.getId());

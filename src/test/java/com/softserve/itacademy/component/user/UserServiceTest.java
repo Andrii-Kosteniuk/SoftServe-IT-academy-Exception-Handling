@@ -66,7 +66,7 @@ public class UserServiceTest {
     @Test
     void testExceptionCreate() {
         Exception exception = assertThrows(RuntimeException.class, () -> userService.create(null));
-        assertEquals("User cannot be null", exception.getMessage());
+        assertEquals("User can not be null", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 

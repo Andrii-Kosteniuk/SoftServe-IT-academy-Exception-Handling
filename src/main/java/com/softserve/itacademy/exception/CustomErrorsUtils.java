@@ -3,6 +3,7 @@ package com.softserve.itacademy.exception;
 import java.util.Objects;
 import java.util.Optional;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ public class CustomErrorsUtils {
 	
 	public <T> Optional<T> returnValidatedFindByIdCallOrElseThrow(Optional<T> optional, String entityName, long id)
 			throws EntityNotFoundException {
-		
+
 		this.validateArgumentLogAndThrow(optional,
 				"%s with id %s not found".formatted(entityName, id),
 				"%s with id {} not found %s".formatted(entityName, id));

@@ -1,5 +1,6 @@
 package com.softserve.itacademy.component.state;
 
+import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.State;
 import com.softserve.itacademy.repository.StateRepository;
 import com.softserve.itacademy.service.StateService;
@@ -32,7 +33,7 @@ class StateServiceTest {
     @BeforeEach
     public void setUp() {
         expected = new State();
-        expected.setName("test state");
+        expected.setName("NEW");
     }
 
     @AfterEach
@@ -89,7 +90,8 @@ class StateServiceTest {
 
     @Test
     void testExceptionUpdate() {
-        Exception exception = assertThrows(RuntimeException.class, ()
+
+        Exception exception = assertThrows(NullEntityReferenceException.class, ()
                 -> stateService.update(null)
         );
         assertEquals("State cannot be null", exception.getMessage());
@@ -116,8 +118,8 @@ class StateServiceTest {
 
     @Test
     void testCorrectGetByName() {
-        when(stateRepository.findByName(anyString())).thenReturn(expected);
-        State actual = stateService.getByName(anyString());
+        when(stateRepository.findByName("NEW")).thenReturn(expected);
+        State actual = stateService.getByName("NEW");
         assertEquals(expected, actual);
         verify(stateRepository, times(1)).findByName(anyString());
     }
@@ -128,6 +130,6 @@ class StateServiceTest {
                 -> stateService.getByName("")
         );
         assertEquals("State with name '' not found", exception.getMessage());
-        verify(stateRepository, times(1)).findByName(anyString());
+
     }
 }

@@ -1,16 +1,14 @@
 package com.softserve.itacademy.service;
 
-import com.softserve.itacademy.ValidationHandler;
-import com.softserve.itacademy.exception.EntityNotFoundException;
 import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.repository.ToDoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -18,14 +16,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ToDoService {
     private final ToDoRepository todoRepository;
-    private final ValidationHandler handler;
 
     public ToDo create(ToDo todo) {
         log.info("Creating a new ToDo: {}", todo);
-        handler.onNullValidation(todo, ToDo.class);
+        checkOnNullEntity(todo);
         ToDo savedToDo = todoRepository.save(todo);
         log.info("ToDo created successfully with ID: {}", savedToDo.getId());
         return savedToDo;
+    }
+
+    private static void checkOnNullEntity(ToDo todo) {
+        if (todo == null) throw new NullEntityReferenceException("ToDo cannot be null");
     }
 
     public ToDo readById(long id) {
@@ -37,8 +38,8 @@ public class ToDoService {
     }
 
     public ToDo update(ToDo todo) {
+        checkOnNullEntity(todo);
         log.info("Updating ToDo with ID: {}", todo.getId());
-        handler.onNullValidation(todo, ToDo.class);
 
         Optional.ofNullable(readById(todo.getId())).orElseThrow(
                 () -> new EntityNotFoundException("ToDo with id " + todo.getId() + " not found")

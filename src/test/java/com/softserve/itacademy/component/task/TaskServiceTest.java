@@ -108,7 +108,7 @@ public class TaskServiceTest {
                 -> taskService.create(null)
         );
 
-        assertEquals("Task cannot be null", exception.getMessage());
+        assertEquals("Task can not be null", exception.getMessage());
         verify(taskRepository, never()).save(new Task());
     }
 
