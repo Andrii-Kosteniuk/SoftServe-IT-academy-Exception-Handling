@@ -1,22 +1,20 @@
 package com.softserve.itacademy.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
-import com.softserve.itacademy.dto.TaskDto;
+import com.softserve.itacademy.ValidationHandler;
 import com.softserve.itacademy.dto.TaskTransformer;
-import com.softserve.itacademy.exception.CustomErrorsUtils;
+import com.softserve.itacademy.dto.TaskDto;
 import com.softserve.itacademy.exception.EntityNotFoundException;
 import com.softserve.itacademy.exception.NullEntityReferenceException;
-import com.softserve.itacademy.model.State;
 import com.softserve.itacademy.model.Task;
 import com.softserve.itacademy.repository.StateRepository;
-import com.softserve.itacademy.repository.TaskRepository;
 import com.softserve.itacademy.repository.ToDoRepository;
-
+import com.softserve.itacademy.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -27,29 +25,19 @@ public class TaskService {
     private final ToDoRepository toDoRepository;
     private final StateRepository stateRepository;
     private final TaskTransformer taskTransformer;
-    private final CustomErrorsUtils customErrorsUtils;
+    private final ValidationHandler handler;
 
-    public TaskDto create(TaskDto taskDto) throws NullEntityReferenceException {
+    public TaskDto create(TaskDto taskDto) {
         log.info("Creating task with details: {}", taskDto);
-        
-        customErrorsUtils.validateArgumentLogAndThrow(taskDto, 
-        		"Task cannot be null", 
-        		"Failed to create task: taskDto is null");
-        
-        var todoOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(
-        		toDoRepository.findById(taskDto.getTodoId()), 
-        		"ToDo", 
-        		taskDto.getTodoId());
-        State state = stateRepository.findByName("New");
-        customErrorsUtils.validateArgumentLogAndThrow(state, 
-        		"State cannot be null", 
-        		"Failed to find State: state is null");
-        
+        handler.onNullValidation(taskDto, TaskDto.class);
         Task task = taskTransformer.fillEntityFields(
                 new Task(),
                 taskDto,
-                todoOpt.get(),
-                state
+                toDoRepository.findById(taskDto.getTodoId()).orElseThrow(() -> {
+                    log.error("ToDo with id {} not found", taskDto.getTodoId());
+                    return new EntityNotFoundException("ToDo not found");
+                }),
+                stateRepository.findByName("New")
         );
 
         Task savedTask = taskRepository.save(task);
@@ -57,33 +45,34 @@ public class TaskService {
         return taskTransformer.convertToDto(savedTask);
     }
 
-    public Task readById(long id) throws EntityNotFoundException {
+    public Task readById(long id) {
         log.info("Reading task with id {}", id);
-       
-        var taskOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(
-        		taskRepository.findById(id), 
-        		"Task", 
-        		id);
-        
-        return taskOpt.get();
+        return taskRepository.findById(id).orElseThrow(() -> {
+            log.error("Task with id {} not found", id);
+            return new EntityNotFoundException("Task with id " + id + " not found");
+        });
     }
 
     public TaskDto update(TaskDto taskDto) {
         log.info("Updating task with id {}", taskDto.getId());
-        
-        customErrorsUtils.validateArgumentLogAndThrow(taskDto, 
-        		"Task cannot be 'null'", 
-        		"Failed to update task: taskDto is null");
-        
-        var taskOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(taskRepository.findById(taskDto.getId()), "Task", taskDto.getId());
-        var todoOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(toDoRepository.findById(taskDto.getTodoId()), "ToDo" , taskDto.getTodoId());
-        var stateOpt = customErrorsUtils.returnValidatedFindByIdCallOrElseThrow(stateRepository.findById(taskDto.getStateId()), "State", taskDto.getStateId());
-        
+        handler.onNullValidation(taskDto, TaskDto.class);
+
+        Task existingTask = taskRepository.findById(taskDto.getId()).orElseThrow(() -> {
+            log.error("Task with id {} not found", taskDto.getId());
+            return new EntityNotFoundException("Task with id " + taskDto.getId() + " not found");
+        });
+
         Task updatedTask = taskTransformer.fillEntityFields(
-        		taskOpt.get(),
+                existingTask,
                 taskDto,
-                todoOpt.get(),
-                stateOpt.get()
+                toDoRepository.findById(taskDto.getTodoId()).orElseThrow(() -> {
+                    log.error("ToDo with id {} not found", taskDto.getTodoId());
+                    return new EntityNotFoundException("ToDo not found");
+                }),
+                stateRepository.findById(taskDto.getStateId()).orElseThrow(() -> {
+                    log.error("State with id {} not found", taskDto.getStateId());
+                    return new EntityNotFoundException("State not found");
+                })
         );
 
         Task savedTask = taskRepository.save(updatedTask);
@@ -107,5 +96,4 @@ public class TaskService {
         log.info("Retrieving tasks for ToDo with id {}", todoId);
         return taskRepository.getByTodoId(todoId);
     }
-    
 }
